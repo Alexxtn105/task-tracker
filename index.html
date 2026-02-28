@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Dashboard</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.2s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0a0a0a;
+            --bg-card: #141414;
+            --bg-card-hover: #1a1a1a;
+            --bg-secondary: #1c1c1c;
+            --bg-chip: #1c1c1c;
+            --bg-chip-active: #2a2a2a;
+            --border: #222;
+            --border-card: #1e1e1e;
+            --text: #e5e5e5;
+            --text-secondary: #888;
+            --text-muted: #555;
+            --shadow: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-hover: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --bg-card: #fff;
+            --bg-card-hover: #fafafa;
+            --bg-secondary: #f0f0f0;
+            --bg-chip: #e8e8e8;
+            --bg-chip-active: #d4d4d4;
+            --border: #e0e0e0;
+            --border-card: #e8e8e8;
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-muted: #999;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-hover: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .sticky-header {
+            flex-shrink: 0;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 20px 0;
+            z-index: 10;
+        }
+
+        .sticky-header-inner {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 20px 48px;
+        }
+
+        .scroll-area-inner {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-family: var(--font);
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+
+        .btn svg { width: 14px; height: 14px; }
+
+        .btn-refresh.loading svg {
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Summary */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .summary-card .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .summary-card .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+
+        .summary-card.total .value { color: var(--text); }
+        .summary-card.merged .dot { background: #a855f7; }
+        .summary-card.merged .value { color: #a855f7; }
+        .summary-card.review .dot { background: #f59e0b; }
+        .summary-card.review .value { color: #f59e0b; }
+        .summary-card.wip .dot { background: #3b82f6; }
+        .summary-card.wip .value { color: #3b82f6; }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 8px;
+            padding-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: var(--bg-chip);
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-family: var(--font);
+            cursor: pointer;
+            transition: all var(--transition);
+            user-select: none;
+        }
+
+        .chip:hover { color: var(--text); background: var(--bg-chip-active); }
+
+        .chip.active {
+            background: var(--bg-chip-active);
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+
+        .chip .count {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        /* Task Card */
+        .task-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius);
+            padding: 18px;
+            box-shadow: var(--shadow);
+            transition: all var(--transition);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .task-card:hover {
+            box-shadow: var(--shadow-hover);
+            background: var(--bg-card-hover);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .task-id {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.2px;
+            text-decoration: none;
+        }
+
+        a.task-id:hover { text-decoration: underline; }
+
+        a.task-description {
+            display: block;
+            text-decoration: none;
+        }
+
+        a.task-description:hover { text-decoration: underline; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .status-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .status-badge[data-status="wip"] {
+            background: rgba(59,130,246,0.12);
+            color: #3b82f6;
+        }
+        .status-badge[data-status="wip"] .dot { background: #3b82f6; }
+
+        .status-badge[data-status="internal-review"] {
+            background: rgba(245,158,11,0.12);
+            color: #f59e0b;
+        }
+        .status-badge[data-status="internal-review"] .dot { background: #f59e0b; }
+
+        .status-badge[data-status="internal-pr"] {
+            background: rgba(74,222,128,0.12);
+            color: #4ade80;
+        }
+        .status-badge[data-status="internal-pr"] .dot { background: #4ade80; }
+
+        .status-badge[data-status="review-approved"] {
+            background: rgba(34,197,94,0.12);
+            color: #22c55e;
+        }
+        .status-badge[data-status="review-approved"] .dot { background: #22c55e; }
+
+        .status-badge[data-status="merged"] {
+            background: rgba(168,85,247,0.12);
+            color: #a855f7;
+        }
+        .status-badge[data-status="merged"] .dot { background: #a855f7; }
+
+        .status-badge[data-status="cancelled"] {
+            background: rgba(113,113,122,0.12);
+            color: #71717a;
+            text-decoration: line-through;
+        }
+        .status-badge[data-status="cancelled"] .dot { background: #71717a; }
+
+        .bad-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(239,68,68,0.08);
+            color: #ef4444;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: default;
+        }
+
+        .task-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            margin-bottom: 12px;
+        }
+
+        /* Sub-tasks (grouped) */
+        .subtasks {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-left: 12px;
+            border-left: 2px solid var(--border);
+        }
+
+        .subtask {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .subtask-repo {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .subtask-status {
+            font-size: 11px;
+        }
+
+        .subtask-links {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Card Footer */
+        .card-dates {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .card-links {
+            display: flex;
+            gap: 6px;
+        }
+
+        .link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .link-btn:hover {
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .link-btn svg { width: 10px; height: 10px; opacity: 0.5; }
+
+        .repo-tag {
+            font-size: 11px;
+            padding: 3px 9px;
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Loading & Error */
+        .loading-state, .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading-state .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-top-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        .error-state { color: #ef4444; }
+        .error-state .retry-btn {
+            margin-top: 12px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+            grid-column: 1 / -1;
+        }
+
+        .last-updated {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sticky-header { padding: 14px 14px 0; }
+            .scroll-area { padding: 14px 14px 40px; }
+            .header h1 { font-size: 18px; }
+            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .summary-card { padding: 12px; }
+            .summary-card .value { font-size: 22px; }
+            .summary-card .label { font-size: 11px; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .filters { gap: 6px; }
+        }
+
+        @media (max-width: 400px) {
+            .summary { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="sticky-header">
+        <div class="sticky-header-inner">
+            <header class="header">
+                <h1>Task Dashboard</h1>
+                <div class="header-actions">
+                    <a class="btn" href="https://docs.google.com/spreadsheets/d/1Llm2JdRMcfuw0CaDRASKd3bcyKXIfy374Ttn1Ns3o_o/edit" target="_blank" rel="noopener" title="Открыть таблицу">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        <span>Таблица</span>
+                    </a>
+                    <button class="btn btn-theme" onclick="toggleTheme()" title="Переключить тему">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-refresh" onclick="refreshData()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        <span>Обновить</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="summary" id="summary">
+                <div class="summary-card total">
+                    <div class="label">Всего задач</div>
+                    <div class="value" id="count-total">—</div>
+                </div>
+                <div class="summary-card merged">
+                    <div class="label">Завершено</div>
+                    <div class="value"><span class="dot"></span><span id="count-merged">—</span></div>
+                </div>
+                <div class="summary-card review">
+                    <div class="label">На ревью</div>
+                    <div class="value"><span class="dot"></span><span id="count-review">—</span></div>
+                </div>
+                <div class="summary-card wip">
+                    <div class="label">В работе</div>
+                    <div class="value"><span class="dot"></span><span id="count-wip">—</span></div>
+                </div>
+            </div>
+
+            <div class="filters" id="filters"></div>
+        </div>
+    </div>
+
+    <div class="scroll-area">
+        <div class="scroll-area-inner">
+            <div class="cards-grid" id="cards"></div>
+            <div class="last-updated" id="last-updated"></div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_ID = '1Llm2JdRMcfuw0CaDRASKd3bcyKXIfy374Ttn1Ns3o_o';
+        const JSONP_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleSheetData&headers=1&gid=0`;
+        const CACHE_KEY = 'task-dashboard-cache';
+        const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+
+        let allTasks = [];
+        let activeFilters = new Set(['wip', 'review']);
+
+        // --- Google Sheets JSONP response → rows array ---
+        function gvizToRows(table) {
+            return table.rows.map(r =>
+                r.c.map(cell => (cell && cell.v != null) ? String(cell.v) : '')
+            );
+        }
+
+        // --- Status Helpers ---
+        function classifyStatus(raw) {
+            if (!raw) return { key: 'wip', label: 'В работе', group: 'wip' };
+            const s = raw.toLowerCase();
+            if (s.includes('отменена') || s.includes('cancel')) return { key: 'cancelled', label: 'Отменена', group: 'wip' };
+            // "PR for merge freedx" etc — PR created, not yet merged
+            if (s.startsWith('pr ') || s.startsWith('pr(')) return { key: 'internal-pr', label: 'PR создан', group: 'review' };
+            // "Merge (push) в dev-freedx" — actually merged
+            if (s.includes('merge') || s.includes('push')) return { key: 'merged', label: 'Merged', group: 'merged' };
+            if (s.includes('прошла') || s.includes('approved')) return { key: 'review-approved', label: 'Ревью пройдено', group: 'review' };
+            if (s.includes('на внутреннем ревью') || s.includes('на ревью')) return { key: 'internal-review', label: 'На ревью', group: 'review' };
+            return { key: 'wip', label: 'В работе', group: 'wip' };
+        }
+
+        function groupForFilter(task) {
+            // For grouped tasks, use the "highest" status
+            if (task.subtasks) {
+                const groups = task.subtasks.map(s => classifyStatus(s.statusRaw).group);
+                if (groups.every(g => g === 'merged')) return 'merged';
+                if (groups.some(g => g === 'review' || g === 'merged')) return 'review';
+                return 'wip';
+            }
+            return classifyStatus(task.statusRaw).group;
+        }
+
+        // --- Date Helpers ---
+        function parseDate(str) {
+            if (!str) return null;
+            const parts = str.split('.');
+            if (parts.length !== 3) return null;
+            return new Date(+parts[2], +parts[1] - 1, +parts[0]);
+        }
+
+        function formatDate(str) {
+            const d = parseDate(str);
+            if (!d || isNaN(d)) return str;
+            return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+        }
+
+        function formatDateRange(start, end) {
+            if (!start) return '';
+            const s = formatDate(start);
+            if (!end) return `${s} — в процессе`;
+            const e = formatDate(end);
+            if (s === e) return s;
+            return `${s} — ${e}`;
+        }
+
+        // --- Task ID Extraction ---
+        function extractTaskId(desc) {
+            const m = desc.match(/^(TD-\d+)\s*[:;]?\s*/i);
+            return m ? { id: m[1].toUpperCase(), description: desc.slice(m[0].length).trim() || desc } : { id: null, description: desc };
+        }
+
+        // --- Data Processing ---
+        function processData(rows) {
+            if (rows.length === 0) return [];
+
+            const rawTasks = rows.map(row => {
+                const desc = row[0] || '';
+                const { id, description } = extractTaskId(desc);
+                return {
+                    taskId: id,
+                    fullDescription: desc,
+                    description,
+                    statusRaw: row[1] || '',
+                    start: row[2] || '',
+                    end: row[3] || '',
+                    jira: row[4] || '',
+                    prInternal: row[5] || '',
+                    prExternal: row[6] || '',
+                    repo: row[7] || ''
+                };
+            });
+
+            // Group by task ID
+            const grouped = new Map();
+            const ungrouped = [];
+
+            rawTasks.forEach(t => {
+                // Skip comment/separator rows (no task ID AND no status)
+                if (!t.taskId && !t.statusRaw) return;
+
+                if (t.taskId) {
+                    if (!grouped.has(t.taskId)) {
+                        grouped.set(t.taskId, []);
+                    }
+                    grouped.get(t.taskId).push(t);
+                } else {
+                    ungrouped.push(t);
+                }
+            });
+
+            const tasks = [];
+
+            grouped.forEach((items, taskId) => {
+                if (items.length === 1) {
+                    tasks.push(items[0]);
+                } else {
+                    // Merge into grouped card
+                    const first = items[0];
+                    tasks.push({
+                        taskId,
+                        description: first.description,
+                        fullDescription: first.fullDescription,
+                        statusRaw: first.statusRaw,
+                        start: items.reduce((min, i) => (!min || (i.start && i.start < min) ? i.start : min), items[0].start),
+                        end: items.every(i => i.end) ? items.reduce((max, i) => (i.end > max ? i.end : max), items[0].end) : '',
+                        jira: first.jira,
+                        subtasks: items.map(i => ({
+                            repo: i.repo,
+                            statusRaw: i.statusRaw,
+                            prInternal: i.prInternal,
+                            prExternal: i.prExternal,
+                            jira: i.jira
+                        }))
+                    });
+                }
+            });
+
+            ungrouped.forEach(t => tasks.push(t));
+
+            return tasks;
+        }
+
+        // --- Render ---
+        function renderSummary(tasks) {
+            let merged = 0, review = 0, wip = 0;
+            tasks.forEach(t => {
+                const g = groupForFilter(t);
+                if (g === 'merged') merged++;
+                else if (g === 'review') review++;
+                else wip++;
+            });
+
+            document.getElementById('count-total').textContent = tasks.length;
+            document.getElementById('count-merged').textContent = merged;
+            document.getElementById('count-review').textContent = review;
+            document.getElementById('count-wip').textContent = wip;
+        }
+
+        function renderFilters(tasks) {
+            const counts = { wip: 0, review: 0, merged: 0 };
+            tasks.forEach(t => { counts[groupForFilter(t)]++; });
+
+            const filters = [
+                { key: 'all', label: 'Все', count: tasks.length },
+                { key: 'wip', label: 'В работе', count: counts.wip },
+                { key: 'review', label: 'На ревью', count: counts.review },
+                { key: 'merged', label: 'Merged', count: counts.merged },
+            ];
+            const container = document.getElementById('filters');
+            container.innerHTML = '';
+
+            const isAll = activeFilters.size === 0;
+
+            filters.forEach(({ key, label, count }) => {
+                const chip = document.createElement('button');
+                const active = key === 'all' ? isAll : activeFilters.has(key);
+                chip.className = 'chip' + (active ? ' active' : '');
+                chip.innerHTML = `${label}<span class="count">${count}</span>`;
+                chip.onclick = () => {
+                    if (key === 'all') {
+                        activeFilters.clear();
+                    } else {
+                        if (activeFilters.has(key)) {
+                            activeFilters.delete(key);
+                        } else {
+                            activeFilters.add(key);
+                        }
+                    }
+                    renderAll();
+                };
+                container.appendChild(chip);
+            });
+        }
+
+        const ARROW_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
+
+        function isUrl(str) {
+            return str && (str.startsWith('http://') || str.startsWith('https://'));
+        }
+
+        function renderLinkBtn(url, label) {
+            if (!url) return '';
+            if (!isUrl(url)) return `<span class="bad-link" title="${url}">&#9888; ${label}</span>`;
+            return `<a href="${url}" target="_blank" rel="noopener" class="link-btn">${label} ${ARROW_ICON}</a>`;
+        }
+
+        function renderCard(task) {
+            const status = classifyStatus(task.statusRaw);
+            const isGrouped = task.subtasks && task.subtasks.length > 1;
+
+            let subtasksHtml = '';
+            if (isGrouped) {
+                const items = task.subtasks.map(s => {
+                    const st = classifyStatus(s.statusRaw);
+                    const links = [
+                        renderLinkBtn(s.prInternal, 'PR int'),
+                        renderLinkBtn(s.prExternal, 'PR ext')
+                    ].filter(Boolean).join('');
+                    return `<div class="subtask">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            ${s.repo ? `<span class="subtask-repo">${s.repo}</span>` : ''}
+                            <span class="status-badge" data-status="${st.key}" style="font-size:10px;padding:2px 7px;"><span class="dot"></span>${st.label}</span>
+                        </div>
+                        <div class="subtask-links">${links}</div>
+                    </div>`;
+                }).join('');
+                subtasksHtml = `<div class="subtasks">${items}</div>`;
+            }
+
+            const dateStr = formatDateRange(task.start, task.end);
+            const singleLinks = !isGrouped ? [
+                renderLinkBtn(task.jira, 'Jira'),
+                renderLinkBtn(task.prInternal, 'PR int'),
+                renderLinkBtn(task.prExternal, 'PR ext')
+            ].filter(Boolean).join('') : renderLinkBtn(task.jira || (task.subtasks && task.subtasks[0].jira), 'Jira');
+
+            const repoTag = (!isGrouped && task.repo) ? `<span class="repo-tag">${task.repo}</span>` : '';
+
+            const jiraUrl = task.jira || (task.subtasks && task.subtasks[0] && task.subtasks[0].jira) || '';
+            const titleId = isUrl(jiraUrl)
+                ? `<a href="${jiraUrl}" target="_blank" rel="noopener" class="task-id">${task.taskId || 'Task'}</a>`
+                : `<span class="task-id">${task.taskId || 'Task'}</span>`;
+            const descHtml = isUrl(jiraUrl)
+                ? `<a href="${jiraUrl}" target="_blank" rel="noopener" class="task-description">${task.description}</a>`
+                : `<div class="task-description">${task.description}</div>`;
+
+            return `<div class="task-card">
+                <div class="card-header">
+                    ${titleId}
+                    <span class="status-badge" data-status="${status.key}"><span class="dot"></span>${status.label}</span>
+                </div>
+                ${descHtml}
+                ${subtasksHtml}
+                ${dateStr ? `<div class="card-dates">${dateStr}</div>` : ''}
+                <div class="card-footer">
+                    <div class="card-links">${singleLinks}</div>
+                    ${repoTag}
+                </div>
+            </div>`;
+        }
+
+        function renderCards(tasks) {
+            const container = document.getElementById('cards');
+            const filtered = activeFilters.size === 0
+                ? tasks
+                : tasks.filter(t => activeFilters.has(groupForFilter(t)));
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state">Нет задач в этой категории</div>';
+                return;
+            }
+            container.innerHTML = filtered.map(renderCard).join('');
+        }
+
+        function renderAll() {
+            renderSummary(allTasks);
+            renderFilters(allTasks);
+            renderCards(allTasks);
+        }
+
+        // --- Data Loading (JSONP to bypass CORS) ---
+        let _fetchTimeout = null;
+
+        function showLoading() {
+            document.getElementById('cards').innerHTML = '<div class="loading-state"><div class="spinner"></div>Загрузка данных...</div>';
+        }
+
+        function showError(msg) {
+            document.getElementById('cards').innerHTML = `<div class="error-state">${msg}<br><button class="btn retry-btn" onclick="refreshData()">Попробовать снова</button></div>`;
+        }
+
+        // Global callback for JSONP
+        function handleSheetData(response) {
+            clearTimeout(_fetchTimeout);
+            const btn = document.querySelector('.btn-refresh');
+            btn.classList.remove('loading');
+
+            if (response.status !== 'ok') {
+                handleFetchError('Google Sheets вернул ошибку');
+                return;
+            }
+
+            try {
+                const rows = gvizToRows(response.table);
+                // Cache raw rows
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ rows, ts: Date.now() }));
+
+                allTasks = processData(rows);
+                renderAll();
+                updateTimestamp();
+            } catch (err) {
+                console.error('Parse error:', err);
+                handleFetchError('Ошибка обработки данных');
+            }
+        }
+
+        function handleFetchError(msg) {
+            const btn = document.querySelector('.btn-refresh');
+            btn.classList.remove('loading');
+
+            const cached = loadCache();
+            if (cached) {
+                allTasks = processData(cached.rows);
+                renderAll();
+                updateTimestamp(cached.ts, true);
+            } else {
+                showError(msg || 'Не удалось загрузить данные');
+            }
+        }
+
+        function fetchData() {
+            showLoading();
+            const btn = document.querySelector('.btn-refresh');
+            btn.classList.add('loading');
+
+            // Remove old script if any
+            const old = document.getElementById('gsheet-loader');
+            if (old) old.remove();
+
+            // Inject JSONP script
+            const script = document.createElement('script');
+            script.id = 'gsheet-loader';
+            script.src = JSONP_URL + '&_t=' + Date.now(); // cache bust
+            script.onerror = () => handleFetchError('Не удалось загрузить данные');
+            document.head.appendChild(script);
+
+            // Timeout fallback (10 sec)
+            _fetchTimeout = setTimeout(() => {
+                handleFetchError('Таймаут загрузки');
+            }, 10000);
+        }
+
+        function loadCache() {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch { return null; }
+        }
+
+        function updateTimestamp(ts, fromCache) {
+            const el = document.getElementById('last-updated');
+            const d = new Date(ts || Date.now());
+            const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const date = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+            el.textContent = `Обновлено: ${date}, ${time}${fromCache ? ' (из кеша)' : ''}`;
+        }
+
+        function refreshData() {
+            fetchData();
+        }
+
+        // --- Theme ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('task-dashboard-theme', next);
+        }
+
+        function loadTheme() {
+            const saved = localStorage.getItem('task-dashboard-theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+        }
+
+        // --- Init ---
+        loadTheme();
+        fetchData();
+    </script>
+</body>
+</html>
