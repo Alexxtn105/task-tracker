@@ -474,16 +474,20 @@
             .sticky-header { padding: 14px 14px 0; }
             .scroll-area { padding: 14px 14px 40px; }
             .header h1 { font-size: 18px; }
-            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-            .summary-card { padding: 12px; }
-            .summary-card .value { font-size: 22px; }
-            .summary-card .label { font-size: 11px; }
+            .header { margin-bottom: 10px; }
+            .summary { grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+            .summary-card { padding: 8px; }
+            .summary-card .value { font-size: 18px; }
+            .summary-card .label { font-size: 10px; letter-spacing: 0.3px; margin-bottom: 2px; }
+            .summary-card .dot { width: 6px; height: 6px; margin-right: 4px; }
             .cards-grid { grid-template-columns: 1fr; }
-            .filters { gap: 6px; }
+            .filters { gap: 6px; padding-bottom: 12px; }
         }
 
         @media (max-width: 400px) {
-            .summary { grid-template-columns: repeat(2, 1fr); }
+            .summary { grid-template-columns: repeat(4, 1fr); }
+            .summary-card .value { font-size: 16px; }
+            .summary-card .label { font-size: 9px; }
         }
     </style>
 </head>
