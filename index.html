@@ -552,21 +552,21 @@
             </header>
 
             <div class="summary" id="summary">
-                <div class="summary-card total">
-                    <div class="label">Всего задач</div>
-                    <div class="value" id="count-total">—</div>
-                </div>
-                <div class="summary-card merged">
-                    <div class="label">Завершено</div>
-                    <div class="value"><span class="dot"></span><span id="count-merged">—</span></div>
+                <div class="summary-card wip">
+                    <div class="label">В работе</div>
+                    <div class="value"><span class="dot"></span><span id="count-wip">—</span></div>
                 </div>
                 <div class="summary-card review">
                     <div class="label">На ревью</div>
                     <div class="value"><span class="dot"></span><span id="count-review">—</span></div>
                 </div>
-                <div class="summary-card wip">
-                    <div class="label">В работе</div>
-                    <div class="value"><span class="dot"></span><span id="count-wip">—</span></div>
+                <div class="summary-card merged">
+                    <div class="label">Завершено</div>
+                    <div class="value"><span class="dot"></span><span id="count-merged">—</span></div>
+                </div>
+                <div class="summary-card total">
+                    <div class="label">Всего задач</div>
+                    <div class="value" id="count-total">—</div>
                 </div>
             </div>
 
@@ -743,10 +743,10 @@
             tasks.forEach(t => { counts[groupForFilter(t)]++; });
 
             const filters = [
-                { key: 'all', label: 'Все', count: tasks.length },
                 { key: 'wip', label: 'В работе', count: counts.wip },
                 { key: 'review', label: 'На ревью', count: counts.review },
                 { key: 'merged', label: 'Merged', count: counts.merged },
+                { key: 'all', label: 'Все', count: tasks.length },
             ];
             const container = document.getElementById('filters');
             container.innerHTML = '';
