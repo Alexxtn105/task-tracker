@@ -617,7 +617,7 @@
 
         // --- Task ID Extraction ---
         function extractTaskId(desc) {
-            const m = desc.match(/^(TD-\d+)\s*[:;]?\s*/i);
+            const m = desc.match(/^([A-Z]{2,}-\d+)\s*[:;]?\s*/i);
             return m ? { id: m[1].toUpperCase(), description: desc.slice(m[0].length).trim() || desc } : { id: null, description: desc };
         }
 
