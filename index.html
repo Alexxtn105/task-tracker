@@ -736,8 +736,8 @@
                 const items = task.subtasks.map(s => {
                     const st = classifyStatus(s.statusRaw);
                     const links = [
-                        renderLinkBtn(s.prInternal, 'PR int'),
-                        renderLinkBtn(s.prExternal, 'PR ext')
+                        renderLinkBtn(s.prInternal, 'PR внутренний'),
+                        renderLinkBtn(s.prExternal, 'PR внешний')
                     ].filter(Boolean).join('');
                     return `<div class="subtask">
                         <div style="display:flex;align-items:center;gap:6px;">
@@ -753,8 +753,8 @@
             const dateStr = formatDateRange(task.start, task.end);
             const singleLinks = !isGrouped ? [
                 renderLinkBtn(task.jira, 'Jira'),
-                renderLinkBtn(task.prInternal, 'PR int'),
-                renderLinkBtn(task.prExternal, 'PR ext')
+                renderLinkBtn(task.prInternal, 'PR внутренний'),
+                renderLinkBtn(task.prExternal, 'PR внешний')
             ].filter(Boolean).join('') : renderLinkBtn(task.jira || (task.subtasks && task.subtasks[0].jira), 'Jira');
 
             const repoTag = (!isGrouped && task.repo) ? `<span class="repo-tag">${task.repo}</span>` : '';
