@@ -611,17 +611,25 @@
             return { key: 'wip', label: 'В работе', group: 'wip' };
         }
 
+        const STATUS_ORDER = { 'wip': 0, 'review': 1, 'review-approved': 2, 'merged': 3 };
+
+        function getGroupStatus(task) {
+            if (!task.subtasks || task.subtasks.length <= 1) return classifyStatus(task.statusRaw);
+            let minStatus = null;
+            let minOrder = Infinity;
+            task.subtasks.forEach(s => {
+                const st = classifyStatus(s.statusRaw);
+                const order = STATUS_ORDER[st.group] ?? 0;
+                if (order < minOrder) {
+                    minOrder = order;
+                    minStatus = st;
+                }
+            });
+            return minStatus;
+        }
+
         function groupForFilter(task) {
-            // For grouped tasks, use the "highest" status
-            if (task.subtasks) {
-                const groups = task.subtasks.map(s => classifyStatus(s.statusRaw).group);
-                if (groups.every(g => g === 'merged')) return 'merged';
-                // If any subtask is in review (not approved) — the whole group is "review"
-                if (groups.some(g => g === 'review')) return 'review';
-                if (groups.some(g => g === 'review-approved')) return 'review-approved';
-                return 'wip';
-            }
-            return classifyStatus(task.statusRaw).group;
+            return getGroupStatus(task).group;
         }
 
         // --- Date Helpers ---
@@ -763,7 +771,7 @@
         }
 
         function renderCard(task) {
-            const status = classifyStatus(task.statusRaw);
+            const status = getGroupStatus(task);
             const isGrouped = task.subtasks && task.subtasks.length > 1;
 
             // Build subtask list: for single tasks, create a pseudo-subtask from the task itself
