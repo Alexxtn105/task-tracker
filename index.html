@@ -492,8 +492,10 @@
 
         /* Compact header on scroll (mobile) */
         @media (max-width: 768px) {
-            .sticky-header {
-                transition: padding 0.25s ease;
+            .header {
+                transition: max-height 0.3s ease, opacity 0.25s ease, margin-bottom 0.25s ease;
+                max-height: 60px;
+                overflow: hidden;
             }
             .summary {
                 transition: gap 0.25s ease, margin-bottom 0.25s ease;
@@ -505,19 +507,15 @@
             .summary-card .label {
                 transition: font-size 0.25s ease, margin-bottom 0.25s ease;
             }
-            .header {
-                transition: margin-bottom 0.25s ease;
-            }
-            .header h1 {
-                transition: font-size 0.25s ease;
-            }
             .filters {
                 transition: padding-bottom 0.25s ease;
             }
+            .sticky-header {
+                transition: padding 0.25s ease;
+            }
 
             .sticky-header.scrolled { padding-top: 6px; padding-bottom: 0; }
-            .sticky-header.scrolled .header { margin-bottom: 4px; }
-            .sticky-header.scrolled .header h1 { font-size: 15px; }
+            .sticky-header.scrolled .header { max-height: 0; opacity: 0; margin-bottom: 0; }
             .sticky-header.scrolled .summary { gap: 4px; margin-bottom: 6px; }
             .sticky-header.scrolled .summary-card { padding: 4px 6px; }
             .sticky-header.scrolled .summary-card .label { font-size: 8px; margin-bottom: 0; }
