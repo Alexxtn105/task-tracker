@@ -732,9 +732,15 @@
             const status = classifyStatus(task.statusRaw);
             const isGrouped = task.subtasks && task.subtasks.length > 1;
 
+            // Build subtask list: for single tasks, create a pseudo-subtask from the task itself
+            const subtaskItems = isGrouped
+                ? task.subtasks
+                : [{ repo: task.repo, statusRaw: task.statusRaw, prInternal: task.prInternal, prExternal: task.prExternal }];
+
+            const hasSubtaskContent = subtaskItems.some(s => s.repo || s.prInternal || s.prExternal);
             let subtasksHtml = '';
-            if (isGrouped) {
-                const items = task.subtasks.map(s => {
+            if (hasSubtaskContent) {
+                const items = subtaskItems.map(s => {
                     const st = classifyStatus(s.statusRaw);
                     const links = [
                         renderLinkBtn(s.prInternal, 'PR внутренний'),
@@ -752,15 +758,9 @@
             }
 
             const dateStr = formatDateRange(task.start, task.end);
-            const singleLinks = !isGrouped ? [
-                renderLinkBtn(task.jira, 'Jira'),
-                renderLinkBtn(task.prInternal, 'PR внутренний'),
-                renderLinkBtn(task.prExternal, 'PR внешний')
-            ].filter(Boolean).join('') : renderLinkBtn(task.jira || (task.subtasks && task.subtasks[0].jira), 'Jira');
-
-            const repoTag = (!isGrouped && task.repo) ? `<span class="repo-tag">${task.repo}</span>` : '';
-
             const jiraUrl = task.jira || (task.subtasks && task.subtasks[0] && task.subtasks[0].jira) || '';
+            const jiraLink = renderLinkBtn(jiraUrl, 'Jira');
+
             const titleId = isUrl(jiraUrl)
                 ? `<a href="${jiraUrl}" target="_blank" rel="noopener" class="task-id">${task.taskId || 'Task'}</a>`
                 : `<span class="task-id">${task.taskId || 'Task'}</span>`;
@@ -776,10 +776,7 @@
                 ${descHtml}
                 ${subtasksHtml}
                 ${dateStr ? `<div class="card-dates">${dateStr}</div>` : ''}
-                <div class="card-footer">
-                    <div class="card-links">${singleLinks}</div>
-                    ${repoTag}
-                </div>
+                ${jiraLink ? `<div class="card-footer"><div class="card-links">${jiraLink}</div></div>` : ''}
             </div>`;
         }
 
