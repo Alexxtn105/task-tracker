@@ -62,7 +62,7 @@
             flex-shrink: 0;
             background: var(--bg);
             border-bottom: 1px solid var(--border);
-            padding: 20px 20px 0;
+            padding: 20px 20px 14px;
             z-index: 10;
         }
 
@@ -138,16 +138,23 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
-            margin-bottom: 14px;
+            margin-bottom: 0;
         }
 
         .summary-card {
             background: var(--bg-card);
-            border: 1px solid var(--border-card);
+            border: 2px solid var(--border-card);
             border-radius: var(--radius);
             padding: 16px;
             box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all var(--transition);
+            user-select: none;
+            opacity: 0.55;
         }
+
+        .summary-card:hover { background: var(--bg-card-hover); opacity: 0.8; }
+        .summary-card.active { opacity: 1; }
 
         .summary-card .label {
             font-size: 12px;
@@ -175,48 +182,16 @@
         }
 
         .summary-card.total .value { color: var(--text); }
+        .summary-card.total.active { border-color: var(--text-secondary); }
         .summary-card.merged .dot { background: #a855f7; }
         .summary-card.merged .value { color: #a855f7; }
+        .summary-card.merged.active { border-color: #a855f7; }
         .summary-card.review .dot { background: #f59e0b; }
         .summary-card.review .value { color: #f59e0b; }
+        .summary-card.review.active { border-color: #f59e0b; }
         .summary-card.wip .dot { background: #3b82f6; }
         .summary-card.wip .value { color: #3b82f6; }
-
-        /* Filters */
-        .filters {
-            display: flex;
-            gap: 8px;
-            padding-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .chip {
-            padding: 6px 14px;
-            border-radius: 20px;
-            background: var(--bg-chip);
-            border: 1px solid transparent;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-family: var(--font);
-            cursor: pointer;
-            transition: all var(--transition);
-            user-select: none;
-        }
-
-        .chip:hover { color: var(--text); background: var(--bg-chip-active); }
-
-        .chip.active {
-            background: var(--bg-chip-active);
-            color: var(--text);
-            border-color: var(--text-muted);
-        }
-
-        .chip .count {
-            display: inline-block;
-            margin-left: 5px;
-            font-size: 11px;
-            opacity: 0.6;
-        }
+        .summary-card.wip.active { border-color: #3b82f6; }
 
         /* Cards Grid */
         .cards-grid {
@@ -471,7 +446,7 @@
 
         /* Mobile */
         @media (max-width: 768px) {
-            .sticky-header { padding: 14px 14px 0; }
+            .sticky-header { padding: 14px 14px 10px; }
             .scroll-area { padding: 14px 14px 40px; }
             .header h1 { font-size: 18px; }
             .header { margin-bottom: 10px; }
@@ -481,7 +456,6 @@
             .summary-card .label { font-size: 10px; letter-spacing: 0.3px; margin-bottom: 2px; }
             .summary-card .dot { width: 6px; height: 6px; margin-right: 4px; }
             .cards-grid { grid-template-columns: 1fr; }
-            .filters { gap: 6px; padding-bottom: 12px; }
         }
 
         @media (max-width: 400px) {
@@ -507,9 +481,6 @@
             .summary-card .label {
                 transition: font-size 0.25s ease, margin-bottom 0.25s ease;
             }
-            .filters {
-                transition: padding-bottom 0.25s ease;
-            }
             .sticky-header {
                 transition: padding 0.25s ease;
             }
@@ -521,7 +492,6 @@
             .sticky-header.scrolled .summary-card .label { font-size: 8px; margin-bottom: 0; }
             .sticky-header.scrolled .summary-card .value { font-size: 14px; }
             .sticky-header.scrolled .summary-card .dot { width: 5px; height: 5px; margin-right: 3px; }
-            .sticky-header.scrolled .filters { padding-bottom: 8px; }
         }
     </style>
 </head>
@@ -552,25 +522,24 @@
             </header>
 
             <div class="summary" id="summary">
-                <div class="summary-card wip">
+                <div class="summary-card wip active" data-filter="wip" onclick="toggleFilter('wip')">
                     <div class="label">В работе</div>
                     <div class="value"><span class="dot"></span><span id="count-wip">—</span></div>
                 </div>
-                <div class="summary-card review">
+                <div class="summary-card review active" data-filter="review" onclick="toggleFilter('review')">
                     <div class="label">На ревью</div>
                     <div class="value"><span class="dot"></span><span id="count-review">—</span></div>
                 </div>
-                <div class="summary-card merged">
+                <div class="summary-card merged" data-filter="merged" onclick="toggleFilter('merged')">
                     <div class="label">Завершено</div>
                     <div class="value"><span class="dot"></span><span id="count-merged">—</span></div>
                 </div>
-                <div class="summary-card total">
-                    <div class="label">Всего задач</div>
+                <div class="summary-card total" data-filter="all" onclick="toggleFilter('all')">
+                    <div class="label">Всего</div>
                     <div class="value" id="count-total">—</div>
                 </div>
             </div>
 
-            <div class="filters" id="filters"></div>
         </div>
     </div>
 
@@ -736,41 +705,13 @@
             document.getElementById('count-merged').textContent = merged;
             document.getElementById('count-review').textContent = review;
             document.getElementById('count-wip').textContent = wip;
-        }
 
-        function renderFilters(tasks) {
-            const counts = { wip: 0, review: 0, merged: 0 };
-            tasks.forEach(t => { counts[groupForFilter(t)]++; });
-
-            const filters = [
-                { key: 'wip', label: 'В работе', count: counts.wip },
-                { key: 'review', label: 'На ревью', count: counts.review },
-                { key: 'merged', label: 'Merged', count: counts.merged },
-                { key: 'all', label: 'Все', count: tasks.length },
-            ];
-            const container = document.getElementById('filters');
-            container.innerHTML = '';
-
+            // Update active state on summary cards
             const isAll = activeFilters.size === 0;
-
-            filters.forEach(({ key, label, count }) => {
-                const chip = document.createElement('button');
+            document.querySelectorAll('.summary-card[data-filter]').forEach(card => {
+                const key = card.dataset.filter;
                 const active = key === 'all' ? isAll : activeFilters.has(key);
-                chip.className = 'chip' + (active ? ' active' : '');
-                chip.innerHTML = `${label}<span class="count">${count}</span>`;
-                chip.onclick = () => {
-                    if (key === 'all') {
-                        activeFilters.clear();
-                    } else {
-                        if (activeFilters.has(key)) {
-                            activeFilters.delete(key);
-                        } else {
-                            activeFilters.add(key);
-                        }
-                    }
-                    renderAll();
-                };
-                container.appendChild(chip);
+                card.classList.toggle('active', active);
             });
         }
 
@@ -854,9 +795,21 @@
             container.innerHTML = filtered.map(renderCard).join('');
         }
 
+        function toggleFilter(key) {
+            if (key === 'all') {
+                activeFilters.clear();
+            } else {
+                if (activeFilters.has(key)) {
+                    activeFilters.delete(key);
+                } else {
+                    activeFilters.add(key);
+                }
+            }
+            renderAll();
+        }
+
         function renderAll() {
             renderSummary(allTasks);
-            renderFilters(allTasks);
             renderCards(allTasks);
         }
 
