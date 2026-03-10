@@ -302,6 +302,16 @@
         }
         .status-badge[data-status="cancelled"] .dot { background: #71717a; }
 
+        a.status-badge.clickable {
+            text-decoration: none;
+            cursor: pointer;
+            transition: filter 0.15s, transform 0.15s;
+        }
+        a.status-badge.clickable:hover {
+            filter: brightness(1.25);
+            transform: scale(1.06);
+        }
+
         .bad-link {
             display: inline-flex;
             align-items: center;
@@ -746,10 +756,15 @@
                         renderLinkBtn(s.prInternal, 'PR внутренний'),
                         renderLinkBtn(s.prExternal, 'PR внешний')
                     ].filter(Boolean).join('');
+                    const badgeUrl = isUrl(s.prInternal) ? s.prInternal : (isUrl(s.prExternal) ? s.prExternal : '');
+                    const badgeInner = `<span class="dot"></span>${st.label}`;
+                    const badgeHtml = (st.group !== 'wip' && badgeUrl)
+                        ? `<a href="${badgeUrl}" target="_blank" rel="noopener" class="status-badge clickable" data-status="${st.key}" style="font-size:10px;padding:2px 7px;">${badgeInner}</a>`
+                        : `<span class="status-badge" data-status="${st.key}" style="font-size:10px;padding:2px 7px;">${badgeInner}</span>`;
                     return `<div class="subtask">
                         <div style="display:flex;align-items:center;gap:6px;">
                             ${s.repo ? `<span class="subtask-repo">${s.repo}</span>` : ''}
-                            <span class="status-badge" data-status="${st.key}" style="font-size:10px;padding:2px 7px;"><span class="dot"></span>${st.label}</span>
+                            ${badgeHtml}
                         </div>
                         <div class="subtask-links">${links}</div>
                     </div>`;
