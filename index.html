@@ -544,7 +544,7 @@
                     <div class="label">На ревью</div>
                     <div class="value"><span class="dot"></span><span id="count-review">—</span></div>
                 </div>
-                <div class="summary-card review-approved" data-filter="review-approved" onclick="toggleFilter('review-approved')">
+                <div class="summary-card review-approved active" data-filter="review-approved" onclick="toggleFilter('review-approved')">
                     <div class="label">Ревью ОК</div>
                     <div class="value"><span class="dot"></span><span id="count-review-approved">—</span></div>
                 </div>
@@ -583,7 +583,7 @@
                 const saved = localStorage.getItem(FILTER_KEY);
                 if (saved) return new Set(JSON.parse(saved));
             } catch {}
-            return new Set(['wip', 'review']);
+            return new Set(['wip', 'review', 'review-approved']);
         }
 
         function saveFilters() {
