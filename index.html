@@ -137,7 +137,7 @@
         /* Summary */
         .summary {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 12px;
             margin-bottom: 0;
         }
@@ -190,6 +190,9 @@
         .summary-card.review .dot { background: #f59e0b; }
         .summary-card.review .value { color: #f59e0b; }
         .summary-card.review.active { border-color: #f59e0b; }
+        .summary-card.review-approved .dot { background: #22c55e; }
+        .summary-card.review-approved .value { color: #22c55e; }
+        .summary-card.review-approved.active { border-color: #22c55e; }
         .summary-card.wip .dot { background: #3b82f6; }
         .summary-card.wip .value { color: #3b82f6; }
         .summary-card.wip.active { border-color: #3b82f6; }
@@ -461,7 +464,7 @@
             .scroll-area { padding: 14px 14px 60px; }
             .header h1 { font-size: 18px; }
             .header { margin-bottom: 10px; }
-            .summary { grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+            .summary { grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
             .summary-card { padding: 8px; }
             .summary-card .value { font-size: 18px; }
             .summary-card .label { font-size: 10px; letter-spacing: 0.3px; margin-bottom: 2px; }
@@ -470,7 +473,7 @@
         }
 
         @media (max-width: 400px) {
-            .summary { grid-template-columns: repeat(4, 1fr); }
+            .summary { grid-template-columns: repeat(5, 1fr); }
             .summary-card .value { font-size: 16px; }
             .summary-card .label { font-size: 9px; }
         }
@@ -541,6 +544,10 @@
                     <div class="label">На ревью</div>
                     <div class="value"><span class="dot"></span><span id="count-review">—</span></div>
                 </div>
+                <div class="summary-card review-approved" data-filter="review-approved" onclick="toggleFilter('review-approved')">
+                    <div class="label">Ревью ОК</div>
+                    <div class="value"><span class="dot"></span><span id="count-review-approved">—</span></div>
+                </div>
                 <div class="summary-card merged" data-filter="merged" onclick="toggleFilter('merged')">
                     <div class="label">Завершено</div>
                     <div class="value"><span class="dot"></span><span id="count-merged">—</span></div>
@@ -568,7 +575,20 @@
         const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 
         let allTasks = [];
-        let activeFilters = new Set(['wip', 'review']);
+        const FILTER_KEY = 'task-dashboard-filters';
+        let activeFilters = loadFilters();
+
+        function loadFilters() {
+            try {
+                const saved = localStorage.getItem(FILTER_KEY);
+                if (saved) return new Set(JSON.parse(saved));
+            } catch {}
+            return new Set(['wip', 'review']);
+        }
+
+        function saveFilters() {
+            localStorage.setItem(FILTER_KEY, JSON.stringify([...activeFilters]));
+        }
 
         // --- Google Sheets JSONP response → rows array ---
         function gvizToRows(table) {
@@ -586,7 +606,7 @@
             if (s.startsWith('pr ') || s.startsWith('pr(')) return { key: 'internal-pr', label: 'PR создан', group: 'review' };
             // "Merge (push) в dev-freedx" — actually merged
             if (s.includes('merge') || s.includes('push')) return { key: 'merged', label: 'Merged', group: 'merged' };
-            if (s.includes('прошла') || s.includes('approved')) return { key: 'review-approved', label: 'Ревью пройдено', group: 'review' };
+            if (s.includes('прошла') || s.includes('approved')) return { key: 'review-approved', label: 'Ревью пройдено', group: 'review-approved' };
             if (s.includes('на внутреннем ревью') || s.includes('на ревью')) return { key: 'internal-review', label: 'На ревью', group: 'review' };
             return { key: 'wip', label: 'В работе', group: 'wip' };
         }
@@ -596,7 +616,9 @@
             if (task.subtasks) {
                 const groups = task.subtasks.map(s => classifyStatus(s.statusRaw).group);
                 if (groups.every(g => g === 'merged')) return 'merged';
-                if (groups.some(g => g === 'review' || g === 'merged')) return 'review';
+                // If any subtask is in review (not approved) — the whole group is "review"
+                if (groups.some(g => g === 'review')) return 'review';
+                if (groups.some(g => g === 'review-approved')) return 'review-approved';
                 return 'wip';
             }
             return classifyStatus(task.statusRaw).group;
@@ -704,10 +726,11 @@
 
         // --- Render ---
         function renderSummary(tasks) {
-            let merged = 0, review = 0, wip = 0;
+            let merged = 0, review = 0, reviewApproved = 0, wip = 0;
             tasks.forEach(t => {
                 const g = groupForFilter(t);
                 if (g === 'merged') merged++;
+                else if (g === 'review-approved') reviewApproved++;
                 else if (g === 'review') review++;
                 else wip++;
             });
@@ -715,6 +738,7 @@
             document.getElementById('count-total').textContent = tasks.length;
             document.getElementById('count-merged').textContent = merged;
             document.getElementById('count-review').textContent = review;
+            document.getElementById('count-review-approved').textContent = reviewApproved;
             document.getElementById('count-wip').textContent = wip;
 
             // Update active state on summary cards
@@ -818,6 +842,7 @@
                     activeFilters.add(key);
                 }
             }
+            saveFilters();
             renderAll();
         }
 
