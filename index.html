@@ -489,6 +489,42 @@
             .summary-card .value { font-size: 16px; }
             .summary-card .label { font-size: 9px; }
         }
+
+        /* Compact header on scroll (mobile) */
+        @media (max-width: 768px) {
+            .sticky-header {
+                transition: padding 0.25s ease;
+            }
+            .summary {
+                transition: gap 0.25s ease, margin-bottom 0.25s ease;
+            }
+            .summary-card {
+                transition: padding 0.25s ease;
+            }
+            .summary-card .value,
+            .summary-card .label {
+                transition: font-size 0.25s ease, margin-bottom 0.25s ease;
+            }
+            .header {
+                transition: margin-bottom 0.25s ease;
+            }
+            .header h1 {
+                transition: font-size 0.25s ease;
+            }
+            .filters {
+                transition: padding-bottom 0.25s ease;
+            }
+
+            .sticky-header.scrolled { padding-top: 6px; padding-bottom: 0; }
+            .sticky-header.scrolled .header { margin-bottom: 4px; }
+            .sticky-header.scrolled .header h1 { font-size: 15px; }
+            .sticky-header.scrolled .summary { gap: 4px; margin-bottom: 6px; }
+            .sticky-header.scrolled .summary-card { padding: 4px 6px; }
+            .sticky-header.scrolled .summary-card .label { font-size: 8px; margin-bottom: 0; }
+            .sticky-header.scrolled .summary-card .value { font-size: 14px; }
+            .sticky-header.scrolled .summary-card .dot { width: 5px; height: 5px; margin-right: 3px; }
+            .sticky-header.scrolled .filters { padding-bottom: 8px; }
+        }
     </style>
 </head>
 <body>
@@ -929,6 +965,13 @@
             const saved = localStorage.getItem('task-dashboard-theme');
             if (saved) document.documentElement.setAttribute('data-theme', saved);
         }
+
+        // --- Compact header on scroll ---
+        const scrollArea = document.querySelector('.scroll-area');
+        const stickyHeader = document.querySelector('.sticky-header');
+        scrollArea.addEventListener('scroll', () => {
+            stickyHeader.classList.toggle('scrolled', scrollArea.scrollTop > 20);
+        }, { passive: true });
 
         // --- Init ---
         loadTheme();
